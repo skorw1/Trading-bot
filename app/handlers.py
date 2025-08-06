@@ -10,10 +10,6 @@ from app.messages import *
 from app.decorators import check_user
 from app.utils import start_trading, stop_trading, get_open_orders_by_pair, place_order
 
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.memory import MemoryStorage
-
 
 logging.basicConfig(level=logging.INFO)
 

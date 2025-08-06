@@ -1,11 +1,9 @@
-from binance import AsyncClient, Client
-import asyncio
+from binance import AsyncClient
 import ta
 from datetime import datetime
 from app.database import get_currency_pair
 import time
 from binance import BinanceSocketManager
-import pytz
 import math
 import aiohttp
 import asyncio
