@@ -1,17 +1,19 @@
 from binance import AsyncClient
+from app.infrastructure.config import get_or_ask
 
-client = None
+API_KEY = get_or_ask('binance_api_key', 'Введіть API KEY Binance: ')
+SECRET_KEY = get_or_ask('binance_secret_key', 'Введіть SECRET KEY Binance: ')
+
 
 async def create_client(api_key, secret_key):
     """
     Создаёт глобальный экземпляр клиента Binance.
     """
-    global client
-    if client is None:
-        client = await AsyncClient.create(api_key, secret_key)
-        print("Клиент Binance создан.")
-    else:
-        print("Клиент Binance уже существует.")
+
+    return await AsyncClient.create(api_key, secret_key)
+
+
+client = create_client(API_KEY, SECRET_KEY)
 
 async def close_client():
     """
