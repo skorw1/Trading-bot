@@ -1,13 +1,14 @@
 import asyncio
 from app.core.trading.state import tasks
 from app.core.trading.trade_loop import trade
-from app.database import  get_currency_pair
+from app.database import get_currency_pair
+from app.infrastructure.config import DATABASE_PATH
 
 async def start_trading(message, symbol, strategy_name):
 
     # Получение данных из базы данных
     print(symbol, strategy_name)
-    pair_info = await get_currency_pair('database.db', symbol, strategy_name)
+    pair_info = await get_currency_pair(DATABASE_PATH, symbol, strategy_name)
     if not pair_info:
         try:
             await message.answer("Пара не знайдена в базі даних.")
