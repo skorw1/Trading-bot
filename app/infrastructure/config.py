@@ -4,6 +4,7 @@ import sys
 import json
 
 CONFIG_FILE = 'config.json'
+DATABASE_PATH = 'database.db'
 def get_config_path():
     # Путь к файлу config.json рядом с exe
     if getattr(sys, 'frozen', False):
