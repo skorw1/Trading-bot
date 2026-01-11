@@ -1,6 +1,6 @@
 
-tracking_orders = {} # для отслеживания ордеров
-tracking_orders_for_limit = {} # для отслеживания ордеров в случае, если выполняется лимитка на усреднение
+tracking_orders = {}
+tracking_orders_for_limit = {} # to track orders in case the limit on averaging is met
 
-# Словарь для хранения задач торговли
+# Dictionary for storing trading tasks
 tasks = {}
