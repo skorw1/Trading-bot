@@ -7,7 +7,7 @@ from app.infrastructure.telegram import safe_answer
 
 async def start_trading(message, symbol, strategy_name):
 
-    # Получение данных из базы данных
+    # receiving data from db
     print(symbol, strategy_name)
     pair_info = await get_currency_pair(DATABASE_PATH, symbol, strategy_name)
     if not pair_info:
