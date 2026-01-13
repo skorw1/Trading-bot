@@ -6,7 +6,7 @@ from app.core.calculations.precising import round_to_tick_size, round_to_step_si
 from app.infrastructure.market_data.binance_api import get_step_size, get_tick_size
 
 from app.infrastructure.config import ALLOWED_USER_ID
-from app.infrastructure.telegram import bot
+from app.infrastructure.telegram import bot, safe_send_message
 from app.core.trading.state import tracking_orders
 from app.infrastructure.market_data.binance_api import get_current_price, get_current_position_quantity
 
@@ -294,63 +294,50 @@ async def close_position(symbol, side, client):
     except Exception as e:
         print(f"Ошибка при закрытии позиции для {symbol}: {e}")
 
-async def close_all_orders_and_positions(symbol: str):
-    """
-    Асинхронно закрывает все открытые ордера и позиции для указанной торговой пары.
-    """
+async def cancel_all_orders(client, symbol: str):
+    orders = await client.futures_get_open_orders(symbol=symbol)
+
+    for order in orders:
+        try:
+            await client.futures_cancel_order(
+                symbol=symbol,
+                orderId=order["orderId"]
+            )
+            print(f"Ордер {order['orderId']} отменён")
+        except Exception as e:
+            print(f"Ошибка отмены ордера {order}: {e}")
+
+async def close_all_positions(client, symbol: str):
+    positions = await client.futures_position_information(symbol=symbol)
+
+    for position in positions:
+        try:
+            amount = float(position.get("positionAmt", 0))
+            if amount == 0:
+                continue
+
+            side = "SELL" if amount > 0 else "BUY"
+
+            await client.futures_create_order(
+                symbol=symbol,
+                side=side,
+                type="MARKET",
+                quantity=abs(amount),
+                reduceOnly=True
+            )
+
+            await safe_send_message(f"Позиція для {symbol} закрита")
+
+        except Exception as e:
+            print(f"Ошибка при закрытии позиции {position}: {e}")
+
+async def close_all_orders_and_positions(symbol: str, client):
     try:
-        # Закрытие всех открытых ордеров
-        open_orders = await client.futures_get_open_orders(symbol=symbol)
-        if open_orders:
-            print(f"Закрытие открытых ордеров для {symbol}...")
-            for order in open_orders:
-                try:
-                    order_id = order['orderId']
-                    await client.futures_cancel_order(symbol=symbol, orderId=order_id)
-                    print(f"Ордер ID {order_id} отменён.")
-                except Exception as e:
-                    print(f"Ошибка при отмене ордера {order}: {e} ({type(e)})")
-        else:
-            print(f"Нет открытых ордеров для {symbol}.")
-
-        # Получение информации о позициях
-        try:
-            positions = await client.futures_position_information(symbol=symbol)
-            print(f"Полученные позиции: {positions}")
-        except Exception as e:
-            print(f"Ошибка при получении позиций: {e} ({type(e)})")
-            return
-
-        # Закрытие всех непустых позиций
-        for position in positions:
-            try:
-                position_amt = float(position.get('positionAmt', 0))
-                print(f"Обнаружена позиция: {position_amt} для {symbol}")
-
-                if position_amt != 0:
-                    has_positions = True
-                    position_side = 'SELL' if position_amt > 0 else 'BUY'
-
-                    await client.futures_create_order(
-                        symbol=symbol,
-                        side=position_side,
-                        type="MARKET",
-                        quantity=abs(position_amt),
-                        reduceOnly=True
-                    )
-                    print(f"Позиция для {symbol} закрыта.")
-
-                    try:
-                        await bot.send_message(chat_id=ALLOWED_USER_ID, text=f'Позиція для {symbol} закрита')
-                    except Exception as e:
-                        print(f'Ошибка при отправке сообщения: {e} ({type(e)})')
-
-            except Exception as e:
-                print(f"Ошибка при обработке позиции: {position}, ошибка: {e} ({type(e)})")
-
+        await cancel_all_orders(client, symbol)
+        await close_all_positions(client, symbol)
     except Exception as e:
-        try:
-            await bot.send_message(chat_id=ALLOWED_USER_ID, text=f'Помилка при закритті позиції / ордера: {e}')
-        except Exception as e:
-            print(f'Ошибка при отправке сообщения об ошибке: {e} ({type(e)})')
-        print(f"Произошла ошибка: {e} ({type(e)})")
+        await safe_send_message(
+            f"Помилка при закритті позицій/ордерів: {e}"
+        )
+
+
