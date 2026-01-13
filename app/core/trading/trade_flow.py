@@ -283,16 +283,21 @@ async def place_order(order_type, symbol, dep, leverage, stop_loss, take_profit1
 
 async def close_position(symbol, side, client):
     try:
+        qty = await get_current_position_quantity(symbol, client)
+
         await client.futures_create_order(
             symbol=symbol,
             side=side,
-            type='MARKET',  # Рыночный ордер для немедленного закрытия
-            quantity=await get_current_position_quantity(symbol, client),  # Текущее количество
-            reduceOnly=True  # Закрыть только открытую позицию
+            type="MARKET",
+            quantity=qty,
+            reduceOnly=True
         )
-        print(f"Позиция для {symbol} успешно закрыта.")
+
+        await safe_send_message(f"Позиция для {symbol} успешно закрыта")
+
     except Exception as e:
-        print(f"Ошибка при закрытии позиции для {symbol}: {e}")
+        print(f"Ошибка при закрытии позиции {symbol}: {e}")
+
 
 async def cancel_all_orders(client, symbol: str):
     orders = await client.futures_get_open_orders(symbol=symbol)
